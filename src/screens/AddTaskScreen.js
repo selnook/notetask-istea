@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 
 export default function AddTaskScreen({ navigation }) {
   const [titulo, setTitulo] = useState('');
@@ -71,6 +72,16 @@ export default function AddTaskScreen({ navigation }) {
         titulo: titulo,
         fechaRecordatorio: fechaRecordatorio.toISOString(),
       };
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Recordatorio de tarea',
+          body: titulo,
+        },
+        trigger: {
+          date: fechaRecordatorio,
+        },
+      });
 
       tareas.push(nuevaTarea);
 
