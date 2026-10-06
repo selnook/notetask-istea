@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import { validarFechaFutura } from '../utils/validarFecha';
 
 export default function AddTaskScreen({ navigation }) {
   const [titulo, setTitulo] = useState('');
@@ -52,7 +53,7 @@ export default function AddTaskScreen({ navigation }) {
 
     if (
       isNaN(fechaRecordatorio.getTime()) ||
-      fechaRecordatorio <= new Date()
+      !validarFechaFutura(fechaRecordatorio)
     ) {
       setMensajeError('El recordatorio debe ser una fecha futura');
       return;

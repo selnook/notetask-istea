@@ -29,6 +29,6 @@
   },
   "private": true,
   "jest": {
-  "preset": "jest-expo"
+    "preset": "jest-expo"
 }
 }

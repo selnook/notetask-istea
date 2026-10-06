@@ -40,6 +40,8 @@ export default function LoginScreen({ navigation, setSesionIniciada }) {
 
         await AsyncStorage.setItem('sesionIniciada', 'true');
         setSesionIniciada(true);
+      } else {
+        setMensajeError('Usuario o contraseña incorrectos');
       }
     } catch (error) {
       setMensajeError('Algo salio mal');
