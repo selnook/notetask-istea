@@ -5,17 +5,21 @@ import {
   TextInput,
   Button,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RegisterScreen({ navigation }) {
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [mensajeError, setMensajeError] = useState('');
+  const [mensajeExito, setMensajeExito] = useState('');
 
   const registrarUsuario = async () => {
+    setMensajeError('');
+    setMensajeExito('');
+
     if (usuario === '' || contrasena === '') {
-      Alert.alert('Error', 'Completá todos los campos');
+      setMensajeError('Complete todos los campos');
       return;
     }
 
@@ -30,16 +34,19 @@ export default function RegisterScreen({ navigation }) {
         JSON.stringify(datosUsuario)
       );
 
-      Alert.alert('Registro exitoso', 'Usuario registrado correctamente');
-      navigation.goBack();
+      setMensajeExito('Usuario registrado correctamente');
+
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1000);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo registrar el usuario');
+      setMensajeError('Algo salio mal');
     }
   };
 
   return (
     <View style={estilos.contenedor}>
-      <Text style={estilos.titulo}>Crear cuenta</Text>
+      <Text style={estilos.titulo}>Crear una cuenta</Text>
 
       <TextInput
         style={estilos.entrada}
@@ -55,6 +62,14 @@ export default function RegisterScreen({ navigation }) {
         onChangeText={setContrasena}
         secureTextEntry
       />
+
+      {mensajeError !== '' && (
+        <Text style={estilos.error}>{mensajeError}</Text>
+      )}
+
+      {mensajeExito !== '' && (
+        <Text style={estilos.exito}>{mensajeExito}</Text>
+      )}
 
       <Button
         title="Registrarse"
@@ -88,5 +103,17 @@ const estilos = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     backgroundColor: '#FFFFFF',
+  },
+
+  error: {
+    color: '#C62828',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+
+  exito: {
+    color: '#2E7D32',
+    textAlign: 'center',
+    marginBottom: 15,
   },
 });

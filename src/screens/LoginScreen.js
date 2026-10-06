@@ -6,17 +6,19 @@ import {
   Button,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen({ navigation }) {
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [mensajeError, setMensajeError] = useState('');
 
   const iniciarSesion = async () => {
+    setMensajeError('');
+
     if (usuario === '' || contrasena === '') {
-      Alert.alert('Error', 'Completá todos los campos');
+      setMensajeError('Complete todos los campos');
       return;
     }
 
@@ -24,7 +26,7 @@ export default function LoginScreen({ navigation }) {
       const usuarioGuardado = await AsyncStorage.getItem('usuarioRegistrado');
 
       if (usuarioGuardado === null) {
-        Alert.alert('Error', 'No hay ningún usuario registrado');
+        setMensajeError('No hay usuarios registrados');
         return;
       }
 
@@ -34,12 +36,13 @@ export default function LoginScreen({ navigation }) {
         usuario === datosUsuario.usuario &&
         contrasena === datosUsuario.contrasena
       ) {
+        setMensajeError('');
         navigation.navigate('Home');
       } else {
-        Alert.alert('Error', 'Usuario o contraseña incorrectos');
+        setMensajeError('Usuario o contraseña incorrectos');
       }
     } catch (error) {
-      Alert.alert('Error', 'No se pudo iniciar sesión');
+      setMensajeError('Algo salio mal');
     }
   };
 
@@ -63,6 +66,10 @@ export default function LoginScreen({ navigation }) {
         secureTextEntry
       />
 
+      {mensajeError !== '' && (
+        <Text style={estilos.error}>{mensajeError}</Text>
+      )}
+
       <Button
         title="Ingresar"
         color="#7C3AED"
@@ -74,7 +81,7 @@ export default function LoginScreen({ navigation }) {
         onPress={() => navigation.navigate('Register')}
       >
         <Text style={estilos.textoRegistro}>
-          ¿No tenés cuenta? Registrate
+          Crear una cuenta
         </Text>
       </TouchableOpacity>
     </View>
@@ -111,6 +118,12 @@ const estilos = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     backgroundColor: '#FFFFFF',
+  },
+
+  error: {
+    color: '#C62828',
+    textAlign: 'center',
+    marginBottom: 15,
   },
 
   botonRegistro: {
