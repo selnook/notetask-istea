@@ -19,6 +19,7 @@ export default function App() {
   }, []);
 
   const comprobarSesion = async () => {
+
     const sesionGuardada = await AsyncStorage.getItem('sesionIniciada');
 
     if (sesionGuardada === 'true') {
