@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen({ navigation, setSesionIniciada }) {
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [mensajeError, setMensajeError] = useState('');
@@ -37,9 +37,9 @@ export default function LoginScreen({ navigation }) {
         contrasena === datosUsuario.contrasena
       ) {
         setMensajeError('');
-        navigation.navigate('Home');
-      } else {
-        setMensajeError('Usuario o contraseña incorrectos');
+
+        await AsyncStorage.setItem('sesionIniciada', 'true');
+        setSesionIniciada(true);
       }
     } catch (error) {
       setMensajeError('Algo salio mal');

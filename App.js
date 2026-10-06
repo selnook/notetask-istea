@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -9,37 +11,75 @@ import AddTaskScreen from './src/screens/AddTaskScreen';
 const Navegador = createNativeStackNavigator();
 
 export default function App() {
+  const [sesionIniciada, setSesionIniciada] = useState(false);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    comprobarSesion();
+  }, []);
+
+  const comprobarSesion = async () => {
+    const sesionGuardada = await AsyncStorage.getItem('sesionIniciada');
+
+    if (sesionGuardada === 'true') {
+      setSesionIniciada(true);
+    }
+
+    setCargando(false);
+  };
+
+  if (cargando) {
+    return null;
+  }
+
   return (
     <NavigationContainer>
       <Navegador.Navigator
-        initialRouteName="Login"
         screenOptions={{
           headerTintColor: '#7C3AED',
         }}
       >
-        <Navegador.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ title: 'Iniciar sesión' }}
-        />
+        {sesionIniciada ? (
+          <>
+            <Navegador.Screen
+              name="Home"
+              options={{ title: 'NoteTask' }}
+            >
+              {(propiedades) => (
+                <HomeScreen
+                  {...propiedades}
+                  setSesionIniciada={setSesionIniciada}
+                />
+              )}
+            </Navegador.Screen>
 
-        <Navegador.Screen
-          name="Register"
-          component={RegisterScreen}
-          options={{ title: 'Registro' }}
-        />
+            <Navegador.Screen
+              name="AddTask"
+              component={AddTaskScreen}
+              options={{ title: 'Nueva tarea' }}
+            />
+          </>
+        ) : (
+          <>
+            <Navegador.Screen
+              name="Login"
+              options={{ title: 'Iniciar sesión' }}
+            >
+              {(propiedades) => (
+                <LoginScreen
+                  {...propiedades}
+                  setSesionIniciada={setSesionIniciada}
+                />
+              )}
+            </Navegador.Screen>
 
-        <Navegador.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ title: 'NoteTask' }}
-        />
-
-        <Navegador.Screen
-          name="AddTask"
-          component={AddTaskScreen}
-          options={{ title: 'Nueva tarea' }}
-        />
+            <Navegador.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{ title: 'Registro' }}
+            />
+          </>
+        )}
       </Navegador.Navigator>
     </NavigationContainer>
   );
