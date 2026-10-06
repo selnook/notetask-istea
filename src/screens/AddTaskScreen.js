@@ -106,6 +106,7 @@ export default function AddTaskScreen({ navigation }) {
         placeholder="Título de la tarea"
         value={titulo}
         onChangeText={setTitulo}
+        placeholderTextColor="#666666"
       />
 
       <TextInput
@@ -113,6 +114,7 @@ export default function AddTaskScreen({ navigation }) {
         placeholder="Fecha (DD/MM/AAAA)"
         value={fecha}
         onChangeText={setFecha}
+        placeholderTextColor="#666666"
       />
 
       <TextInput
@@ -120,6 +122,7 @@ export default function AddTaskScreen({ navigation }) {
         placeholder="Hora (HH:MM)"
         value={hora}
         onChangeText={setHora}
+        placeholderTextColor="#666666"
       />
 
       {mensajeError !== '' && (

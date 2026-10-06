@@ -53,6 +53,7 @@ export default function RegisterScreen({ navigation }) {
         placeholder="Usuario"
         value={usuario}
         onChangeText={setUsuario}
+        placeholderTextColor="#666666"
       />
 
       <TextInput
@@ -61,6 +62,7 @@ export default function RegisterScreen({ navigation }) {
         value={contrasena}
         onChangeText={setContrasena}
         secureTextEntry
+        placeholderTextColor="#666666"
       />
 
       {mensajeError !== '' && (

@@ -58,6 +58,7 @@ export default function LoginScreen({ navigation, setSesionIniciada }) {
         placeholder="Usuario"
         value={usuario}
         onChangeText={setUsuario}
+        placeholderTextColor="#666666"
       />
 
       <TextInput
@@ -66,6 +67,7 @@ export default function LoginScreen({ navigation, setSesionIniciada }) {
         value={contrasena}
         onChangeText={setContrasena}
         secureTextEntry
+        placeholderTextColor="#666666"
       />
 
       {mensajeError !== '' && (
