@@ -5,6 +5,7 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
+  Linking,
 } from 'react-native';
 
 export default function TaskItem({ tarea, eliminarTarea }) {
@@ -15,6 +16,14 @@ export default function TaskItem({ tarea, eliminarTarea }) {
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const abrirMapa = () => {
+  const { latitud, longitud } = tarea.ubicacion;
+
+  const url = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
+
+  Linking.openURL(url);
+  };
 
   return (
     <View style={estilos.contenedor}>
@@ -30,6 +39,16 @@ export default function TaskItem({ tarea, eliminarTarea }) {
           style={estilos.foto}
           resizeMode="cover"
         />
+      )}
+
+      { tarea.ubicacion && (
+        <View style={{ marginBottom: 10 }}>
+          <Button
+            title="Ver en Google Maps"
+            color="#7C3AED"
+            onPress={abrirMapa}
+          />
+        </View>
       )}
 
       <TouchableOpacity
