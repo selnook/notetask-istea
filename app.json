@@ -9,6 +9,17 @@
     "ios": {
       "supportsTablet": true
     },
+    "plugins": [
+  [
+    "expo-image-picker",
+    {
+      "photosPermission": "NoteTask necesita acceder a tus fotos para adjuntarlas a las tareas.",
+      "cameraPermission": "NoteTask necesita usar la cámara para sacar fotos de las tareas.",
+      "microphonePermission": false
+    }
+  ]
+  ],
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

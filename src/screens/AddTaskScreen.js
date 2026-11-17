@@ -5,16 +5,19 @@ import {
   TextInput,
   Button,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { validarFechaFutura } from '../utils/validarFecha';
+import SelectorFoto from '../components/SelectorFoto';
 
 export default function AddTaskScreen({ navigation }) {
   const [titulo, setTitulo] = useState('');
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
   const [mensajeError, setMensajeError] = useState('');
+  const [foto, setFoto] = useState(null);
 
   const guardarTarea = async () => {
     setMensajeError('');
@@ -60,7 +63,8 @@ export default function AddTaskScreen({ navigation }) {
     }
 
     try {
-      const tareasGuardadas = await AsyncStorage.getItem('tareas');
+      const tareasGuardadas =
+        await AsyncStorage.getItem('tareas');
 
       let tareas = [];
 
@@ -74,15 +78,20 @@ export default function AddTaskScreen({ navigation }) {
         fechaRecordatorio: fechaRecordatorio.toISOString(),
       };
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Recordatorio de tarea',
-          body: titulo,
-        },
-        trigger: {
-          date: fechaRecordatorio,
-        },
-      });
+      if (Platform.OS !== 'web') {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Recordatorio de tarea',
+            body: titulo,
+            sound: 'default',
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: fechaRecordatorio,
+            channelId: 'recordatorios',
+          },
+        });
+      }
 
       tareas.push(nuevaTarea);
 
@@ -104,25 +113,25 @@ export default function AddTaskScreen({ navigation }) {
       <TextInput
         style={estilos.entrada}
         placeholder="Título de la tarea"
+        placeholderTextColor="#666666"
         value={titulo}
         onChangeText={setTitulo}
-        placeholderTextColor="#666666"
       />
 
       <TextInput
         style={estilos.entrada}
         placeholder="Fecha (DD/MM/AAAA)"
+        placeholderTextColor="#666666"
         value={fecha}
         onChangeText={setFecha}
-        placeholderTextColor="#666666"
       />
 
       <TextInput
         style={estilos.entrada}
         placeholder="Hora (HH:MM)"
+        placeholderTextColor="#666666"
         value={hora}
         onChangeText={setHora}
-        placeholderTextColor="#666666"
       />
 
       {mensajeError !== '' && (
@@ -130,6 +139,8 @@ export default function AddTaskScreen({ navigation }) {
           {mensajeError}
         </Text>
       )}
+
+      <SelectorFoto foto={foto} setFoto={setFoto} />
 
       <Button
         title="Guardar tarea"

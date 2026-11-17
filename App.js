@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,6 +10,15 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import AddTaskScreen from './src/screens/AddTaskScreen';
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 const Navegador = createNativeStackNavigator();
 
 export default function App() {
@@ -17,7 +27,7 @@ export default function App() {
 
   useEffect(() => {
     comprobarSesion();
-    solicitarPermisos();
+    configurarNotificaciones();
   }, []);
 
   const comprobarSesion = async () => {
@@ -32,7 +42,19 @@ export default function App() {
     setCargando(false);
   };
 
-  const solicitarPermisos = async () => {
+  const configurarNotificaciones = async () => {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(
+        'recordatorios',
+        {
+          name: 'Recordatorios',
+          importance: Notifications.AndroidImportance.HIGH,
+          sound: 'default',
+          vibrationPattern: [0, 250, 250, 250],
+        }
+      );
+    }
+
     const permisos =
       await Notifications.requestPermissionsAsync();
 
