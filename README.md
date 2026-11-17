@@ -58,3 +58,23 @@ Finalmente se creó el store en `src/store/useTaskStore.js` y se adaptaron las p
 AsyncStorage se sigue utilizando para conservar las tareas al cerrar la aplicación.
 
 Los cambios se fueron integrando y probando directamente en Android para comprobar que las funcionalidades anteriores siguieran funcionando.
+
+## Cómo ejecutar la aplicación
+
+Para desarrollar y probar NoteTask utilicé `npx expo run:android` directamente con mi celular conectado por USB mediante ADB, en lugar de utilizar Expo Go.
+
+Elegí hacerlo de esta manera porque me resultó más fácil y práctico para probar la aplicación y sus funcionalidades directamente en Android.
+
+Para ejecutarla, primero hay que instalar las dependencias:
+
+```bash
+npm install
+```
+
+Después, con el celular conectado y la depuración USB habilitada:
+
+```bash
+npx expo run:android
+```
+
+Esto compila, instala y ejecuta la aplicación directamente en el dispositivo.
