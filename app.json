@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "NoteTask",
@@ -10,16 +11,15 @@
       "supportsTablet": true
     },
     "plugins": [
-  [
-    "expo-image-picker",
-    {
-      "photosPermission": "NoteTask necesita acceder a tus fotos para adjuntarlas a las tareas.",
-      "cameraPermission": "NoteTask necesita usar la cámara para sacar fotos de las tareas.",
-      "microphonePermission": false
-    }
-  ]
-  ],
-
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "NoteTask necesita acceder a tus fotos para adjuntarlas a las tareas.",
+          "cameraPermission": "NoteTask necesita usar la cámara para sacar fotos de las tareas.",
+          "microphonePermission": false
+        }
+      ]
+    ],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -27,7 +27,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.selnook.NoteTask"
+      "package": "com.selnook.NoteTask",
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

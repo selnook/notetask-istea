@@ -49,7 +49,6 @@ export default function App() {
         {
           name: 'Recordatorios',
           importance: Notifications.AndroidImportance.HIGH,
-          sound: 'default',
           vibrationPattern: [0, 250, 250, 250],
         }
       );

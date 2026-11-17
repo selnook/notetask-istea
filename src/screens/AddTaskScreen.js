@@ -15,7 +15,7 @@ import * as Location from 'expo-location';
 import { File, Paths } from 'expo-file-system';
 import { validarFechaFutura } from '../utils/validarFecha';
 import SelectorFoto from '../components/SelectorFoto';
-import * as Calendar from 'expo-calendar';
+import * as Calendar from 'expo-calendar/legacy';
 
 export default function AddTaskScreen({ navigation }) {
   const [titulo, setTitulo] = useState('');
@@ -128,7 +128,6 @@ export default function AddTaskScreen({ navigation }) {
           content: {
             title: 'Recordatorio de tarea',
             body: titulo,
-            sound: 'default',
           },
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,

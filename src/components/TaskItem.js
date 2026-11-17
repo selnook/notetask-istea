@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Linking,
+  Button,
 } from 'react-native';
 
 export default function TaskItem({ tarea, eliminarTarea }) {

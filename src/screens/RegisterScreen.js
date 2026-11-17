@@ -105,6 +105,7 @@ const estilos = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     backgroundColor: '#FFFFFF',
+    color: '#7C3AED',
   },
 
   error: {
