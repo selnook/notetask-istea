@@ -29,7 +29,11 @@ export default function TaskItem({ tarea, eliminarTarea }) {
   return (
     <View style={estilos.contenedor}>
       <Text style={estilos.titulo}>{tarea.titulo}</Text>
-
+      {tarea.descripcion ? (
+        <Text style={estilos.descripcion}>
+          {tarea.descripcion}
+        </Text>
+      ) : null}
       <Text style={estilos.recordatorio}>
         Recordatorio: {fechaTexto} - {horaTexto}
       </Text>
@@ -77,6 +81,11 @@ const estilos = StyleSheet.create({
     fontWeight: 'bold',
     color: '#7C3AED',
     marginBottom: 5,
+  },
+
+  descripcion: {
+    color: '#444444',
+    marginBottom: 10,
   },
 
   recordatorio: {

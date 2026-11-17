@@ -9,22 +9,50 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
+import * as Calendar from 'expo-calendar/legacy';
 import { File, Paths } from 'expo-file-system';
 import { validarFechaFutura } from '../utils/validarFecha';
 import SelectorFoto from '../components/SelectorFoto';
-import * as Calendar from 'expo-calendar/legacy';
 
 export default function AddTaskScreen({ navigation }) {
   const [titulo, setTitulo] = useState('');
-  const [fecha, setFecha] = useState('');
-  const [hora, setHora] = useState('');
+  const [fecha, setFecha] = useState(null);
+  const [hora, setHora] = useState(null);
   const [mensajeError, setMensajeError] = useState('');
   const [foto, setFoto] = useState(null);
   const [ubicacion, setUbicacion] = useState(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
+  const [descripcion, setDescripcion] = useState('');
+
+  const elegirFecha = () => {
+    DateTimePickerAndroid.open({
+      value: fecha || new Date(),
+      mode: 'date',
+      minimumDate: new Date(),
+      onValueChange: (fechaSeleccionada) => {
+        if (fechaSeleccionada) {
+          setFecha(fechaSeleccionada);
+        }
+      },
+    });
+  };
+
+  const elegirHora = () => {
+    DateTimePickerAndroid.open({
+      value: hora || new Date(),
+      mode: 'time',
+      is24Hour: true,
+      onValueChange: (horaSeleccionada) => {
+        if (horaSeleccionada) {
+          setHora(horaSeleccionada);
+        }
+      },
+    });
+  };
 
   const obtenerUbicacion = async () => {
     setObteniendoUbicacion(true);
@@ -56,56 +84,34 @@ export default function AddTaskScreen({ navigation }) {
   const guardarTarea = async () => {
     setMensajeError('');
 
-    if (
-      titulo.trim() === '' ||
-      fecha.trim() === '' ||
-      hora.trim() === ''
-    ) {
+    if (titulo.trim() === '' || fecha === null || hora === null) {
       setMensajeError('Completá todos los campos');
       return;
     }
 
-    const partesFecha = fecha.split('/');
-    const partesHora = hora.split(':');
-
-    if (partesFecha.length !== 3 || partesHora.length !== 2) {
-      setMensajeError('Ingresá una fecha y hora válidas');
-      return;
-    }
-
-    const dia = Number(partesFecha[0]);
-    const mes = Number(partesFecha[1]) - 1;
-    const anio = Number(partesFecha[2]);
-    const horas = Number(partesHora[0]);
-    const minutos = Number(partesHora[1]);
-
     const fechaRecordatorio = new Date(
-      anio,
-      mes,
-      dia,
-      horas,
-      minutos
+      fecha.getFullYear(),
+      fecha.getMonth(),
+      fecha.getDate(),
+      hora.getHours(),
+      hora.getMinutes()
     );
 
-    if (
-      isNaN(fechaRecordatorio.getTime()) ||
-      !validarFechaFutura(fechaRecordatorio)
-    ) {
+    if (!validarFechaFutura(fechaRecordatorio)) {
       setMensajeError('El recordatorio debe ser una fecha futura');
       return;
     }
 
     try {
       const tareasGuardadas = await AsyncStorage.getItem('tareas');
-      let tareas = [];
-
-      if (tareasGuardadas !== null) {
-        tareas = JSON.parse(tareasGuardadas);
-      }
+      const tareas = tareasGuardadas
+        ? JSON.parse(tareasGuardadas)
+        : [];
 
       const nuevaTarea = {
         id: Date.now().toString(),
         titulo: titulo,
+        descripcion: descripcion.trim(),
         fechaRecordatorio: fechaRecordatorio.toISOString(),
         ubicacion: ubicacion,
       };
@@ -162,15 +168,22 @@ export default function AddTaskScreen({ navigation }) {
                 fechaRecordatorio.getTime() + 60 * 60 * 1000
               );
 
-              await Calendar.createEventAsync(calendario.id, {
-                title: titulo,
-                startDate: fechaRecordatorio,
-                endDate: fechaFin,
-                notes: 'Tarea creada desde NoteTask',
-              });
+              const idEvento = await Calendar.createEventAsync(
+                calendario.id,
+                {
+                  title: titulo,
+                  startDate: fechaRecordatorio,
+                  endDate: fechaFin,
+                  notes: descripcion.trim() || 'Tarea creada desde NoteTask',
+                }
+              );
+
+              console.log('Evento de calendario creado:', idEvento);
             } else {
-              console.log('No hay calendarios disponibles para crear eventos');
+              console.log('No hay calendarios editables');
             }
+          } else {
+            console.log('Permiso de calendario denegado');
           }
         } catch (error) {
           console.log('Error al crear evento de calendario:', error);
@@ -200,24 +213,51 @@ export default function AddTaskScreen({ navigation }) {
       />
 
       <TextInput
-        style={estilos.entrada}
-        placeholder="Fecha (DD/MM/AAAA)"
+        style={[estilos.entrada, estilos.descripcion]}
+        placeholder="Descripción de la tarea (opcional)"
         placeholderTextColor="#666666"
-        value={fecha}
-        onChangeText={setFecha}
+        value={descripcion}
+        onChangeText={setDescripcion}
+        multiline
+        numberOfLines={4}
+        textAlignVertical="top"
       />
 
-      <TextInput
-        style={estilos.entrada}
-        placeholder="Hora (HH:MM)"
-        placeholderTextColor="#666666"
-        value={hora}
-        onChangeText={setHora}
-      />
+      <View style={estilos.seccion}>
+        <Button
+          title="Seleccionar fecha"
+          color="#7C3AED"
+          onPress={elegirFecha}
+        />
+
+        <Text style={estilos.valor}>
+          {fecha
+            ? fecha.toLocaleDateString('es-AR')
+            : 'Ninguna fecha seleccionada'}
+        </Text>
+      </View>
+
+      <View style={estilos.seccion}>
+        <Button
+          title="Seleccionar hora"
+          color="#7C3AED"
+          onPress={elegirHora}
+        />
+
+        <Text style={estilos.valor}>
+          {hora
+            ? hora.toLocaleTimeString('es-AR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })
+            : 'Ninguna hora seleccionada'}
+        </Text>
+      </View>
 
       <SelectorFoto foto={foto} setFoto={setFoto} />
 
-      <View style={estilos.seccionUbicacion}>
+      <View style={estilos.seccion}>
         <Button
           title={
             obteniendoUbicacion
@@ -230,7 +270,7 @@ export default function AddTaskScreen({ navigation }) {
         />
 
         {ubicacion !== null && (
-          <Text style={estilos.ubicacion}>
+          <Text style={estilos.valor}>
             Ubicación guardada: {ubicacion.latitud.toFixed(5)},
             {' '}{ubicacion.longitud.toFixed(5)}
           </Text>
@@ -273,13 +313,18 @@ const estilos = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     backgroundColor: '#FFFFFF',
+    color: '#222222',
   },
 
-  seccionUbicacion: {
+  descripcion: {
+    height: 100,
+  },
+    
+  seccion: {
     marginBottom: 15,
   },
 
-  ubicacion: {
+  valor: {
     textAlign: 'center',
     marginTop: 10,
     color: '#7C3AED',
