@@ -15,6 +15,7 @@ import * as Location from 'expo-location';
 import { File, Paths } from 'expo-file-system';
 import { validarFechaFutura } from '../utils/validarFecha';
 import SelectorFoto from '../components/SelectorFoto';
+import * as Calendar from 'expo-calendar';
 
 export default function AddTaskScreen({ navigation }) {
   const [titulo, setTitulo] = useState('');
@@ -143,6 +144,39 @@ export default function AddTaskScreen({ navigation }) {
         'tareas',
         JSON.stringify(tareas)
       );
+
+      if (Platform.OS !== 'web') {
+        try {
+          const permisos = await Calendar.requestCalendarPermissionsAsync();
+
+          if (permisos.granted) {
+            const calendarios = await Calendar.getCalendarsAsync(
+              Calendar.EntityTypes.EVENT
+            );
+
+            const calendario = calendarios.find(
+              (item) => item.allowsModifications
+            );
+
+            if (calendario) {
+              const fechaFin = new Date(
+                fechaRecordatorio.getTime() + 60 * 60 * 1000
+              );
+
+              await Calendar.createEventAsync(calendario.id, {
+                title: titulo,
+                startDate: fechaRecordatorio,
+                endDate: fechaFin,
+                notes: 'Tarea creada desde NoteTask',
+              });
+            } else {
+              console.log('No hay calendarios disponibles para crear eventos');
+            }
+          }
+        } catch (error) {
+          console.log('Error al crear evento de calendario:', error);
+        }
+      }
 
       navigation.goBack();
     } catch (error) {
