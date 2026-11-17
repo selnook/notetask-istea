@@ -1,6 +1,8 @@
+
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
@@ -21,6 +23,14 @@ export default function TaskItem({ tarea, eliminarTarea }) {
       <Text style={estilos.recordatorio}>
         Recordatorio: {fechaTexto} - {horaTexto}
       </Text>
+
+      {tarea.foto && (
+        <Image
+          source={{ uri: tarea.foto }}
+          style={estilos.foto}
+          resizeMode="cover"
+        />
+      )}
 
       <TouchableOpacity
         style={estilos.botonEliminar}
@@ -50,6 +60,13 @@ const estilos = StyleSheet.create({
   },
 
   recordatorio: {
+    marginBottom: 10,
+  },
+
+  foto: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
     marginBottom: 10,
   },
 

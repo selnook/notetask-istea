@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   View,
@@ -6,9 +7,12 @@ import {
   Button,
   StyleSheet,
   Platform,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import * as Location from 'expo-location';
+import { File, Paths } from 'expo-file-system';
 import { validarFechaFutura } from '../utils/validarFecha';
 import SelectorFoto from '../components/SelectorFoto';
 
@@ -18,6 +22,35 @@ export default function AddTaskScreen({ navigation }) {
   const [hora, setHora] = useState('');
   const [mensajeError, setMensajeError] = useState('');
   const [foto, setFoto] = useState(null);
+  const [ubicacion, setUbicacion] = useState(null);
+  const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
+
+  const obtenerUbicacion = async () => {
+    setObteniendoUbicacion(true);
+    setMensajeError('');
+
+    try {
+      const permisos = await Location.requestForegroundPermissionsAsync();
+
+      if (!permisos.granted) {
+        setMensajeError('Se necesita permiso de ubicación');
+        return;
+      }
+
+      const posicion = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setUbicacion({
+        latitud: posicion.coords.latitude,
+        longitud: posicion.coords.longitude,
+      });
+    } catch (error) {
+      setMensajeError('No se pudo obtener la ubicación');
+    } finally {
+      setObteniendoUbicacion(false);
+    }
+  };
 
   const guardarTarea = async () => {
     setMensajeError('');
@@ -42,7 +75,6 @@ export default function AddTaskScreen({ navigation }) {
     const dia = Number(partesFecha[0]);
     const mes = Number(partesFecha[1]) - 1;
     const anio = Number(partesFecha[2]);
-
     const horas = Number(partesHora[0]);
     const minutos = Number(partesHora[1]);
 
@@ -63,9 +95,7 @@ export default function AddTaskScreen({ navigation }) {
     }
 
     try {
-      const tareasGuardadas =
-        await AsyncStorage.getItem('tareas');
-
+      const tareasGuardadas = await AsyncStorage.getItem('tareas');
       let tareas = [];
 
       if (tareasGuardadas !== null) {
@@ -76,7 +106,21 @@ export default function AddTaskScreen({ navigation }) {
         id: Date.now().toString(),
         titulo: titulo,
         fechaRecordatorio: fechaRecordatorio.toISOString(),
+        ubicacion: ubicacion,
       };
+
+      if (foto !== null) {
+        const archivoOriginal = new File(foto);
+        const extension = archivoOriginal.extension || '.jpg';
+
+        const archivoGuardado = new File(
+          Paths.document,
+          `tarea_${nuevaTarea.id}${extension}`
+        );
+
+        archivoOriginal.copy(archivoGuardado);
+        nuevaTarea.foto = archivoGuardado.uri;
+      }
 
       if (Platform.OS !== 'web') {
         await Notifications.scheduleNotificationAsync({
@@ -102,12 +146,16 @@ export default function AddTaskScreen({ navigation }) {
 
       navigation.goBack();
     } catch (error) {
+      console.log('Error al guardar tarea:', error);
       setMensajeError('No se pudo guardar la tarea');
     }
   };
 
   return (
-    <View style={estilos.contenedor}>
+    <ScrollView
+      contentContainerStyle={estilos.contenedor}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={estilos.titulo}>Nueva tarea</Text>
 
       <TextInput
@@ -134,26 +182,44 @@ export default function AddTaskScreen({ navigation }) {
         onChangeText={setHora}
       />
 
-      {mensajeError !== '' && (
-        <Text style={estilos.error}>
-          {mensajeError}
-        </Text>
-      )}
-
       <SelectorFoto foto={foto} setFoto={setFoto} />
+
+      <View style={estilos.seccionUbicacion}>
+        <Button
+          title={
+            obteniendoUbicacion
+              ? 'Obteniendo ubicación...'
+              : 'Agregar ubicación actual'
+          }
+          color="#7C3AED"
+          disabled={obteniendoUbicacion}
+          onPress={obtenerUbicacion}
+        />
+
+        {ubicacion !== null && (
+          <Text style={estilos.ubicacion}>
+            Ubicación guardada: {ubicacion.latitud.toFixed(5)},
+            {' '}{ubicacion.longitud.toFixed(5)}
+          </Text>
+        )}
+      </View>
+
+      {mensajeError !== '' && (
+        <Text style={estilos.error}>{mensajeError}</Text>
+      )}
 
       <Button
         title="Guardar tarea"
         color="#7C3AED"
         onPress={guardarTarea}
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const estilos = StyleSheet.create({
   contenedor: {
-    flex: 1,
+    flexGrow: 1,
     padding: 30,
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
@@ -174,6 +240,16 @@ const estilos = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     backgroundColor: '#FFFFFF',
+  },
+
+  seccionUbicacion: {
+    marginBottom: 15,
+  },
+
+  ubicacion: {
+    textAlign: 'center',
+    marginTop: 10,
+    color: '#7C3AED',
   },
 
   error: {
