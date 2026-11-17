@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,15 +9,24 @@ import {
   ScrollView,
 } from 'react-native';
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
 import * as Calendar from 'expo-calendar/legacy';
 import { File, Paths } from 'expo-file-system';
 import { validarFechaFutura } from '../utils/validarFecha';
 import SelectorFoto from '../components/SelectorFoto';
+import useTaskStore from '../store/useTaskStore';
 
-export default function AddTaskScreen({ navigation }) {
+export default function AddTaskScreen({ navigation, route }) {
+  const taskId = route.params?.taskId;
+
+  const tasks = useTaskStore((state) => state.tasks);
+  const addTask = useTaskStore((state) => state.addTask);
+  const updateTask = useTaskStore((state) => state.updateTask);
+
+  const selectedTask = tasks.find((task) => task.id === taskId);
+  const isEditing = Boolean(taskId);
+
   const [titulo, setTitulo] = useState('');
   const [fecha, setFecha] = useState(null);
   const [hora, setHora] = useState(null);
@@ -27,6 +35,29 @@ export default function AddTaskScreen({ navigation }) {
   const [ubicacion, setUbicacion] = useState(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
   const [descripcion, setDescripcion] = useState('');
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: isEditing ? 'Editar tarea' : 'Nueva tarea',
+    });
+  }, [navigation, isEditing]);
+
+  useEffect(() => {
+    if (!selectedTask) return;
+
+    setTitulo(selectedTask.titulo || '');
+    setDescripcion(selectedTask.descripcion || '');
+    setFoto(selectedTask.foto || null);
+    setUbicacion(selectedTask.ubicacion || null);
+
+    const fechaGuardada = new Date(selectedTask.fechaRecordatorio);
+
+    if (!isNaN(fechaGuardada.getTime())) {
+      setFecha(fechaGuardada);
+      setHora(fechaGuardada);
+    }
+  }, [selectedTask?.id]);
 
   const elegirFecha = () => {
     DateTimePickerAndroid.open({
@@ -81,11 +112,118 @@ export default function AddTaskScreen({ navigation }) {
     }
   };
 
+  const guardarFoto = (id) => {
+    if (foto === null) return null;
+
+    if (isEditing && foto === selectedTask?.foto) {
+      return foto;
+    }
+
+    const archivoOriginal = new File(foto);
+    const extension = archivoOriginal.extension || '.jpg';
+
+    const archivoGuardado = new File(
+      Paths.document,
+      `tarea_${id}_${Date.now()}${extension}`
+    );
+
+    archivoOriginal.copy(archivoGuardado);
+
+    return archivoGuardado.uri;
+  };
+
+  const programarNotificacion = async (fechaRecordatorio) => {
+    if (Platform.OS === 'web') return null;
+
+    return await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Recordatorio de tarea',
+        body: titulo.trim(),
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: fechaRecordatorio,
+        channelId: 'recordatorios',
+      },
+    });
+  };
+
+  const guardarEventoCalendario = async (fechaRecordatorio) => {
+    if (Platform.OS === 'web') return null;
+
+    try {
+      const permisos = await Calendar.requestCalendarPermissionsAsync();
+
+      if (!permisos.granted) {
+        console.log('Calendar permission denied');
+        return null;
+      }
+
+      const calendarios = await Calendar.getCalendarsAsync(
+        Calendar.EntityTypes.EVENT
+      );
+
+      const calendario = calendarios.find(
+        (item) => item.allowsModifications
+      );
+
+      if (!calendario) {
+        console.log('No editable calendars available');
+        return null;
+      }
+
+      const fechaFin = new Date(
+        fechaRecordatorio.getTime() + 60 * 60 * 1000
+      );
+
+      const datosEvento = {
+        title: titulo.trim(),
+        startDate: fechaRecordatorio,
+        endDate: fechaFin,
+        notes: descripcion.trim() || 'Tarea creada desde NoteTask',
+      };
+
+      if (isEditing && selectedTask?.calendarEventId) {
+        await Calendar.updateEventAsync(
+          selectedTask.calendarEventId,
+          datosEvento
+        );
+
+        return selectedTask.calendarEventId;
+      }
+
+      return await Calendar.createEventAsync(
+        calendario.id,
+        datosEvento
+      );
+    } catch (error) {
+      console.log('Error saving calendar event:', error);
+      return selectedTask?.calendarEventId || null;
+    }
+  };
+
   const guardarTarea = async () => {
+    if (guardando) return;
+
     setMensajeError('');
 
-    if (titulo.trim() === '' || fecha === null || hora === null) {
-      setMensajeError('Completá todos los campos');
+    if (isEditing && !selectedTask) {
+      setMensajeError('No se encontró la tarea para editar');
+      return;
+    }
+
+    if (titulo.trim() === '') {
+      setMensajeError('Ingresá un título para la tarea');
+      return;
+    }
+
+    if (!(fecha instanceof Date) || isNaN(fecha.getTime())) {
+      setMensajeError('Seleccioná una fecha válida');
+      return;
+    }
+
+    if (!(hora instanceof Date) || isNaN(hora.getTime())) {
+      setMensajeError('Seleccioná una hora válida');
       return;
     }
 
@@ -97,102 +235,84 @@ export default function AddTaskScreen({ navigation }) {
       hora.getMinutes()
     );
 
-    if (!validarFechaFutura(fechaRecordatorio)) {
+    if (
+      isNaN(fechaRecordatorio.getTime()) ||
+      !validarFechaFutura(fechaRecordatorio)
+    ) {
       setMensajeError('El recordatorio debe ser una fecha futura');
       return;
     }
 
-    try {
-      const tareasGuardadas = await AsyncStorage.getItem('tareas');
-      const tareas = tareasGuardadas
-        ? JSON.parse(tareasGuardadas)
-        : [];
+    setGuardando(true);
 
-      const nuevaTarea = {
-        id: Date.now().toString(),
-        titulo: titulo,
+    let notificationId = null;
+    let tareaPersistida = false;
+
+    try {
+      const id = isEditing
+        ? selectedTask.id
+        : Date.now().toString();
+
+      const datosTarea = {
+        titulo: titulo.trim(),
         descripcion: descripcion.trim(),
         fechaRecordatorio: fechaRecordatorio.toISOString(),
-        ubicacion: ubicacion,
+        ubicacion,
+        foto: guardarFoto(id),
       };
 
-      if (foto !== null) {
-        const archivoOriginal = new File(foto);
-        const extension = archivoOriginal.extension || '.jpg';
+      notificationId = await programarNotificacion(fechaRecordatorio);
 
-        const archivoGuardado = new File(
-          Paths.document,
-          `tarea_${nuevaTarea.id}${extension}`
-        );
+      datosTarea.notificationId = notificationId;
 
-        archivoOriginal.copy(archivoGuardado);
-        nuevaTarea.foto = archivoGuardado.uri;
-      }
-
-      if (Platform.OS !== 'web') {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Recordatorio de tarea',
-            body: titulo,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: fechaRecordatorio,
-            channelId: 'recordatorios',
-          },
+      if (isEditing) {
+        await updateTask(id, datosTarea);
+      } else {
+        await addTask({
+          id,
+          ...datosTarea,
         });
       }
 
-      tareas.push(nuevaTarea);
+      tareaPersistida = true;
 
-      await AsyncStorage.setItem(
-        'tareas',
-        JSON.stringify(tareas)
+      // Cancelar la notificación anterior solo después de
+      // guardar correctamente la tarea actualizada.
+      if (isEditing && selectedTask.notificationId) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(
+            selectedTask.notificationId
+          );
+        } catch (error) {
+          console.log('Error canceling old notification:', error);
+        }
+      }
+
+      const calendarEventId = await guardarEventoCalendario(
+        fechaRecordatorio
       );
 
-      if (Platform.OS !== 'web') {
-        try {
-          const permisos = await Calendar.requestCalendarPermissionsAsync();
-
-          if (permisos.granted) {
-            const calendarios = await Calendar.getCalendarsAsync(
-              Calendar.EntityTypes.EVENT
-            );
-
-            const calendario = calendarios.find(
-              (item) => item.allowsModifications
-            );
-
-            if (calendario) {
-              const fechaFin = new Date(
-                fechaRecordatorio.getTime() + 60 * 60 * 1000
-              );
-
-              const idEvento = await Calendar.createEventAsync(
-                calendario.id,
-                {
-                  title: titulo,
-                  startDate: fechaRecordatorio,
-                  endDate: fechaFin,
-                  notes: descripcion.trim() || 'Tarea creada desde NoteTask',
-                }
-              );
-sip
-            } else {
-              console.log('No hay calendarios editables');
-            }
-          } else {
-            console.log('Permiso de calendario denegado');
-          }
-        } catch (error) {
-          console.log('Error al crear evento de calendario:', error);
-        }
+      if (calendarEventId) {
+        await updateTask(id, { calendarEventId });
       }
 
       navigation.goBack();
     } catch (error) {
-      console.log('Error al guardar tarea:', error);
+      console.log('Error saving task:', error);
+
+      if (!tareaPersistida && notificationId) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(
+            notificationId
+          );
+        } catch (cancelError) {
+          console.log('Error canceling notification:', cancelError);
+        }
+      }
+
       setMensajeError('No se pudo guardar la tarea');
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -201,7 +321,9 @@ sip
       contentContainerStyle={estilos.contenedor}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={estilos.titulo}>Nueva tarea</Text>
+      <Text style={estilos.titulo}>
+        {isEditing ? 'Editar tarea' : 'Nueva tarea'}
+      </Text>
 
       <TextInput
         style={estilos.entrada}
@@ -230,7 +352,7 @@ sip
         />
 
         <Text style={estilos.valor}>
-          {fecha
+          {fecha instanceof Date
             ? fecha.toLocaleDateString('es-AR')
             : 'Ninguna fecha seleccionada'}
         </Text>
@@ -244,12 +366,12 @@ sip
         />
 
         <Text style={estilos.valor}>
-          {hora
+          {hora instanceof Date
             ? hora.toLocaleTimeString('es-AR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false,
-            })
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              })
             : 'Ninguna hora seleccionada'}
         </Text>
       </View>
@@ -281,8 +403,15 @@ sip
       )}
 
       <Button
-        title="Guardar tarea"
+        title={
+          guardando
+            ? 'Guardando...'
+            : isEditing
+              ? 'Guardar cambios'
+              : 'Guardar tarea'
+        }
         color="#7C3AED"
+        disabled={guardando}
         onPress={guardarTarea}
       />
     </ScrollView>
@@ -318,7 +447,7 @@ const estilos = StyleSheet.create({
   descripcion: {
     height: 100,
   },
-    
+
   seccion: {
     marginBottom: 15,
   },

@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+
+import { useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,46 +11,18 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import TaskItem from '../components/TaskItem';
+import useTaskStore from '../store/useTaskStore';
 
 export default function HomeScreen({ navigation, setSesionIniciada }) {
-  const [tareas, setTareas] = useState([]);
+  const tasks = useTaskStore((state) => state.tasks);
+  const loadTasks = useTaskStore((state) => state.loadTasks);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
 
   useFocusEffect(
     useCallback(() => {
-      cargarTareas();
-    }, [])
+      loadTasks();
+    }, [loadTasks])
   );
-
- const cargarTareas = async () => {
-  try {
-    const tareasGuardadas = await AsyncStorage.getItem('tareas');
-
-    if (tareasGuardadas !== null) {
-      setTareas(JSON.parse(tareasGuardadas));
-    } else {
-      setTareas([]);
-    }
-  } catch (error) {
-    console.log('Error al cargar las tareas');
-  }
-};
-
-  const eliminarTarea = async (id) => {
-    try {
-      const nuevasTareas = tareas.filter(
-        (tarea) => tarea.id !== id
-      );
-
-      setTareas(nuevasTareas);
-
-      await AsyncStorage.setItem(
-        'tareas',
-        JSON.stringify(nuevasTareas)
-      );
-    } catch (error) {
-      console.log('Error al eliminar la tarea');
-    }
-  };
 
   const cerrarSesion = async () => {
     await AsyncStorage.removeItem('sesionIniciada');
@@ -66,18 +39,21 @@ export default function HomeScreen({ navigation, setSesionIniciada }) {
         onPress={() => navigation.navigate('AddTask')}
       />
 
-      {tareas.length === 0 ? (
+      {tasks.length === 0 ? (
         <Text style={estilos.sinTareas}>
           Todavía no tenés tareas.
         </Text>
       ) : (
         <FlatList
-          data={tareas}
-          keyExtractor={(tarea) => tarea.id}
+          data={tasks}
+          keyExtractor={(task) => task.id}
           renderItem={({ item }) => (
             <TaskItem
               tarea={item}
-              eliminarTarea={eliminarTarea}
+              eliminarTarea={deleteTask}
+              editarTarea={() => navigation.navigate('AddTask', {
+                taskId: item.id,
+              })}
             />
           )}
         />

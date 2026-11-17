@@ -9,7 +9,7 @@ import {
   Button,
 } from 'react-native';
 
-export default function TaskItem({ tarea, eliminarTarea }) {
+export default function TaskItem({ tarea, eliminarTarea, editarTarea }) {
   const fecha = new Date(tarea.fechaRecordatorio);
 
   const fechaTexto = fecha.toLocaleDateString();
@@ -19,21 +19,23 @@ export default function TaskItem({ tarea, eliminarTarea }) {
   });
 
   const abrirMapa = () => {
-  const { latitud, longitud } = tarea.ubicacion;
+    const { latitud, longitud } = tarea.ubicacion;
 
-  const url = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
 
-  Linking.openURL(url);
+    Linking.openURL(url);
   };
 
   return (
     <View style={estilos.contenedor}>
       <Text style={estilos.titulo}>{tarea.titulo}</Text>
+
       {tarea.descripcion ? (
         <Text style={estilos.descripcion}>
           {tarea.descripcion}
         </Text>
       ) : null}
+
       <Text style={estilos.recordatorio}>
         Recordatorio: {fechaTexto} - {horaTexto}
       </Text>
@@ -46,7 +48,7 @@ export default function TaskItem({ tarea, eliminarTarea }) {
         />
       )}
 
-      { tarea.ubicacion && (
+      {tarea.ubicacion && (
         <View style={{ marginBottom: 10 }}>
           <Button
             title="Ver en Google Maps"
@@ -55,6 +57,13 @@ export default function TaskItem({ tarea, eliminarTarea }) {
           />
         </View>
       )}
+
+      <TouchableOpacity
+        style={estilos.botonEditar}
+        onPress={editarTarea}
+      >
+        <Text style={estilos.textoEditar}>Editar</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={estilos.botonEliminar}
@@ -97,6 +106,19 @@ const estilos = StyleSheet.create({
     height: 180,
     borderRadius: 8,
     marginBottom: 10,
+  },
+
+  botonEditar: {
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#7C3AED',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+
+  textoEditar: {
+    color: '#7C3AED',
+    textAlign: 'center',
   },
 
   botonEliminar: {
