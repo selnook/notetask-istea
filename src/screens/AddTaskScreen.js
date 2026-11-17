@@ -33,8 +33,8 @@ export default function AddTaskScreen({ navigation }) {
       value: fecha || new Date(),
       mode: 'date',
       minimumDate: new Date(),
-      onValueChange: (fechaSeleccionada) => {
-        if (fechaSeleccionada) {
+      onValueChange: (evento, fechaSeleccionada) => {
+        if (fechaSeleccionada instanceof Date) {
           setFecha(fechaSeleccionada);
         }
       },
@@ -46,8 +46,8 @@ export default function AddTaskScreen({ navigation }) {
       value: hora || new Date(),
       mode: 'time',
       is24Hour: true,
-      onValueChange: (horaSeleccionada) => {
-        if (horaSeleccionada) {
+      onValueChange: (evento, horaSeleccionada) => {
+        if (horaSeleccionada instanceof Date) {
           setHora(horaSeleccionada);
         }
       },
@@ -177,8 +177,7 @@ export default function AddTaskScreen({ navigation }) {
                   notes: descripcion.trim() || 'Tarea creada desde NoteTask',
                 }
               );
-
-              console.log('Evento de calendario creado:', idEvento);
+sip
             } else {
               console.log('No hay calendarios editables');
             }

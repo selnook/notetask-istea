@@ -30,7 +30,8 @@
       "package": "com.selnook.NoteTask",
       "permissions": [
         "android.permission.READ_CALENDAR",
-        "android.permission.WRITE_CALENDAR"
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
