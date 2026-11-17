@@ -1,12 +1,5 @@
-
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Linking,
-  Button,
+  View, Text, Image, TouchableOpacity, StyleSheet, Linking, Button,
 } from 'react-native';
 
 export default function TaskItem({ tarea, eliminarTarea, editarTarea }) {
@@ -24,6 +17,13 @@ export default function TaskItem({ tarea, eliminarTarea, editarTarea }) {
     const url = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
 
     Linking.openURL(url);
+  };
+
+  const llamarContacto = () => {
+    if (!tarea.contacto?.telefono) return;
+
+    const telefono = tarea.contacto.telefono.replace(/[^\d+]/g, '');
+    Linking.openURL(`tel:${telefono}`);
   };
 
   return (
@@ -55,6 +55,31 @@ export default function TaskItem({ tarea, eliminarTarea, editarTarea }) {
             color="#7C3AED"
             onPress={abrirMapa}
           />
+        </View>
+      )}
+
+      {tarea.contacto && (
+        <View style={estilos.seccionContacto}>
+          <Text style={estilos.nombreContacto}>
+            Contacto: {tarea.contacto.nombre}
+          </Text>
+
+          {tarea.contacto.telefono ? (
+            <>
+              <Text style={estilos.telefonoContacto}>
+                {tarea.contacto.telefono}
+              </Text>
+
+              <TouchableOpacity
+                style={estilos.botonLlamar}
+                onPress={llamarContacto}
+              >
+                <Text style={estilos.textoLlamar}>
+                  Llamar contacto
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
         </View>
       )}
 
@@ -106,6 +131,38 @@ const estilos = StyleSheet.create({
     height: 180,
     borderRadius: 8,
     marginBottom: 10,
+  },
+
+  seccionContacto: {
+    marginBottom: 15,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+  },
+
+  nombreContacto: {
+    fontWeight: 'bold',
+    color: '#7C3AED',
+    marginBottom: 5,
+  },
+
+  telefonoContacto: {
+    color: '#444444',
+    marginBottom: 10,
+  },
+
+  botonLlamar: {
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#7C3AED',
+    borderRadius: 5,
+  },
+
+  textoLlamar: {
+    color: '#7C3AED',
+    textAlign: 'center',
   },
 
   botonEditar: {

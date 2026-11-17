@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "NoteTask",
@@ -18,7 +19,13 @@
           "microphonePermission": false
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "NoteTask necesita acceder a tus contactos para asociarlos a las tareas."
+        }
+      ]
     ],
     "android": {
       "adaptiveIcon": {
@@ -31,7 +38,8 @@
       "permissions": [
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.READ_CONTACTS"
       ]
     },
     "web": {

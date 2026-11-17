@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  Button,
-  StyleSheet,
-  Platform,
-  ScrollView,
+  View, Text, TextInput, Button, StyleSheet, Platform, ScrollView, Modal, FlatList, TouchableOpacity,
 } from 'react-native';
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
+import * as Contacts from 'expo-contacts/legacy';
 import * as Calendar from 'expo-calendar/legacy';
 import { File, Paths } from 'expo-file-system';
 import { validarFechaFutura } from '../utils/validarFecha';
@@ -36,6 +31,11 @@ export default function AddTaskScreen({ navigation, route }) {
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
   const [descripcion, setDescripcion] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [contacto, setContacto] = useState(null);
+  const [contactos, setContactos] = useState([]);
+  const [busquedaContacto, setBusquedaContacto] = useState('');
+  const [mostrandoContactos, setMostrandoContactos] = useState(false);
+  const [cargandoContactos, setCargandoContactos] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({
@@ -50,6 +50,7 @@ export default function AddTaskScreen({ navigation, route }) {
     setDescripcion(selectedTask.descripcion || '');
     setFoto(selectedTask.foto || null);
     setUbicacion(selectedTask.ubicacion || null);
+    setContacto(selectedTask.contacto || null);
 
     const fechaGuardada = new Date(selectedTask.fechaRecordatorio);
 
@@ -111,6 +112,49 @@ export default function AddTaskScreen({ navigation, route }) {
       setObteniendoUbicacion(false);
     }
   };
+
+  const elegirContacto = async () => {
+    setMensajeError('');
+    setCargandoContactos(true);
+
+    try {
+      const permisos = await Contacts.requestPermissionsAsync();
+
+      if (!permisos.granted) {
+        setMensajeError('Se necesita permiso para acceder a los contactos');
+        return;
+      }
+
+      const resultado = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers],
+      });
+
+      const lista = resultado.data
+        .filter((item) => item.name)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      setContactos(lista);
+      setBusquedaContacto('');
+      setMostrandoContactos(true);
+    } catch (error) {
+      console.log('Error loading contacts:', error);
+      setMensajeError('No se pudieron cargar los contactos');
+    } finally {
+      setCargandoContactos(false);
+    }
+  };
+
+  const seleccionarContacto = (item) => {
+    setContacto({
+      nombre: item.name,
+      telefono: item.phoneNumbers?.[0]?.number || '',
+    });
+    setMostrandoContactos(false);
+  };
+
+  const contactosFiltrados = contactos.filter((item) =>
+    item.name.toLowerCase().includes(busquedaContacto.toLowerCase())
+  );
 
   const guardarFoto = (id) => {
     if (foto === null) return null;
@@ -258,6 +302,7 @@ export default function AddTaskScreen({ navigation, route }) {
         descripcion: descripcion.trim(),
         fechaRecordatorio: fechaRecordatorio.toISOString(),
         ubicacion,
+        contacto,
         foto: guardarFoto(id),
       };
 
@@ -398,6 +443,65 @@ export default function AddTaskScreen({ navigation, route }) {
         )}
       </View>
 
+      <View style={estilos.seccion}>
+        <Button
+          title={cargandoContactos ? 'Cargando contactos...' : 'Seleccionar contacto'}
+          color="#7C3AED"
+          disabled={cargandoContactos}
+          onPress={elegirContacto}
+        />
+
+        {contacto && (
+          <View>
+            <Text style={estilos.valor}>
+              Contacto: {contacto.nombre}
+              {contacto.telefono ? ` (${contacto.telefono})` : ''}
+            </Text>
+            <Button
+              title="Quitar contacto"
+              color="#C62828"
+              onPress={() => setContacto(null)}
+            />
+          </View>
+        )}
+      </View>
+
+      <Modal
+        visible={mostrandoContactos}
+        animationType="slide"
+        onRequestClose={() => setMostrandoContactos(false)}
+      >
+        <View style={estilos.modalContenedor}>
+          <Text style={estilos.titulo}>Elegir contacto</Text>
+          <TextInput
+            style={estilos.entrada}
+            placeholder="Buscar contacto"
+            value={busquedaContacto}
+            onChangeText={setBusquedaContacto}
+          />
+          <FlatList
+            data={contactosFiltrados}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={<Text>No se encontraron contactos.</Text>}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={estilos.contactoItem}
+                onPress={() => seleccionarContacto(item)}
+              >
+                <Text style={estilos.contactoNombre}>{item.name}</Text>
+                <Text>{item.phoneNumbers?.[0]?.number || 'Sin teléfono'}</Text>
+              </TouchableOpacity>
+            )}
+          />
+          <Button
+            title="Cancelar"
+            color="#7C3AED"
+            onPress={() => setMostrandoContactos(false)}
+          />
+        </View>
+      </Modal>
+
       {mensajeError !== '' && (
         <Text style={estilos.error}>{mensajeError}</Text>
       )}
@@ -455,6 +559,24 @@ const estilos = StyleSheet.create({
   valor: {
     textAlign: 'center',
     marginTop: 10,
+    color: '#7C3AED',
+  },
+
+  modalContenedor: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+
+  contactoItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DDDDDD',
+  },
+
+  contactoNombre: {
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#7C3AED',
   },
 
